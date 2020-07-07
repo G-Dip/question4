@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'photo.dart';
+
 class RestService {
   static final RestService _instance = RestService._constructor();
   factory RestService() {
@@ -14,7 +16,7 @@ class RestService {
   // Don't use https for local JSON-Server
   // Make sure you specify the port number 3000
 
-  static const String baseUrl = 'http://192.168.0.3:3000';
+  static const String baseUrl = 'http://10.100.31.197';
 
   Future get(String endpoint) async {
     final response = await http.get('$baseUrl/$endpoint');
@@ -52,5 +54,27 @@ class RestService {
       return;
     }
     throw response;
+  }
+
+  Future<List<Photo>> getAllPhotos() async {
+    final listJson = await get('photos');
+    return (listJson as List)
+        .map((itemJson) => Photo.fromJson(itemJson))
+        .toList();
+  }
+
+  Future<Photo> votePhoto({int id, bool like}) async {
+    final photoJson = await get('photos/$id');
+    Photo photo = Photo.fromJson(photoJson);
+    photo.dislike += 1;
+    var json;
+    if (like) {
+      photo.like += 1;
+      json = await patch('photos/$id', data: {'like': photo.like});
+    } else {
+      photo.dislike += 0;
+      json = await patch('photos/$id', data: {'dislike': photo.dislike});
+    }
+    return Photo.fromJson(json);
   }
 }
